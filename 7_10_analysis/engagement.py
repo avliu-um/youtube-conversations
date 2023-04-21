@@ -7,64 +7,9 @@ import json
 from util import *
 
 
-# TODO: Check double source commenter for Xiru
-def write_trees():
-    new_columns = ['video_id', 'comment_id', 'likes', 'code',
-                   'source_user_id', 'target_user_id',
-                   'parent_comment_id', 'depth', 'comment',
-                   'source_user_leaning', 'target_user_leaning']
-    #desired_trees = 1000
-
-    try:
-        print('time start: {0}'.format(datetime.datetime.now()))
-        with bz2.BZ2File('./user_convos_2.bz2', 'r') as fin:
-            with bz2.open('./convo_trees.bz2', 'at') as fout:
-
-                tree_nodes_list = []
-                trees_count = 0
-                i = 0
-                for line in fin:
-                    line = line.decode('utf-8')
-                    line = line.rstrip()
-                    ls = line.split(",")
-
-                    data = dict(zip(new_columns, ls))
-                    code = int(data['code'])
-
-                    #print('{0}'.format(data))
-                    if i % 1000000 == 0:
-                        print('checkin: iteration #{0}'.format(i))
-
-                    # Hacky way of populating the list first with beginning node
-                    if i == 0:
-                        tree_nodes_list.append(data)
-                    i += 1
-
-                    if code == 0:
-                        tree = list_to_tree(tree_nodes_list)
-                        fout.write(json.dumps(tree) + '\n')
-
-                        trees_count += 1
-                        #if trees_count >= desired_trees:
-                            #break
-
-                        # new tree
-                        tree_nodes_list = []
-
-                    if i != 0:
-                        tree_nodes_list.append(data)
-
-    except:
-        print('iteration: {0}'.format(i))
-        print('data_dict: {0}'.format(data))
-        raise
-    finally:
-        print('trees: {0}'.format(trees_count))
-        print('iterations: {0}'.format(i))
-        print('time end: {0}'.format(datetime.datetime.now()))
-
-
 # Input: dictionary representing the tree
+# Recursively find the size, width, and depth of a tree in dictionary form
+# Write it to file
 def tree_stats(tree_dict, file):
     # Get the property we want:
     #   Average engagement for chains
@@ -97,43 +42,6 @@ def tree_stats(tree_dict, file):
     file.write(dict_to_string(data, columns))
 
 
-def tree_to_chains(root_comment_id, tree_dict, left_votes, right_votes, file, leanings_dict):
-    """
-
-    :param root_comment_id: root comment
-    :param tree_dict: the tree of the current node
-    :param left_votes: number of left comments up to (but not including) this node
-    :param right_votes: ^ (right)
-    :param file: file to write results in if leaf hit (i.e. completed a chain)
-    :param leanings_dict: reference dict for the political leaning of each user
-    :return: nothing
-    """
-
-    leaning = '0'
-    source_user_id = tree_dict['source_user_id']
-    if source_user_id in leanings_dict.keys():
-        leaning = leanings_dict[source_user_id]
-
-    new_left_votes = left_votes
-    new_right_votes = right_votes
-    if leaning == 'L':
-        new_left_votes += 1
-    elif leaning == 'R':
-        new_right_votes += 1
-
-    if len(tree_dict['children']) == 0:
-        # create the data point
-        columns = ['video_id', 'begin_comment_id', 'end_comment_id',
-                   'count_left_comments', 'count_right_comments', 'count_total_comments']
-        values = [tree_dict['video_id'], root_comment_id, tree_dict['comment_id'],
-                  new_left_votes, new_right_votes, int(tree_dict['depth'])+1]
-        data = dict(zip(columns, values))
-        file.write(dict_to_string(data, columns))
-
-    for child in tree_dict['children']:
-        tree_to_chains(root_comment_id, child, new_left_votes, new_right_votes, file, leanings_dict)
-
-
 # TODO: Write header row for new text files, delete "root comment" for chains
 def process_trees():
 
@@ -141,26 +49,24 @@ def process_trees():
 
     try:
         print('time start: {0}'.format(datetime.datetime.now()))
-        with bz2.BZ2File('./convo_trees.bz2') as file:
+        with bz2.BZ2File('../sources/convo_trees.bz2') as file:
             with bz2.open('./tree_stats.bz2', 'at') as trees_file:
-                with bz2.open('./chains.bz2', 'at') as chains_file:
 
-                    i = 0
-                    for line in file:
-                        line = line.decode('utf-8')
-                        line = line.rstrip()
+                i = 0
+                for line in file:
+                    line = line.decode('utf-8')
+                    line = line.rstrip()
 
-                        #print(line)
+                    #print(line)
 
-                        tree = json.loads(line)
+                    tree = json.loads(line)
 
-                        # desired operations
-                        tree_stats(tree, trees_file)
-                        tree_to_chains(tree['comment_id'], tree, 0, 0, chains_file, user_leanings)
+                    # desired operations
+                    tree_stats(tree, trees_file)
 
-                        if i % 1000000 == 0:
-                            print('checkin: iteration #{0}'.format(i))
-                        i += 1
+                    if i % 1000000 == 0:
+                        print('checkin: iteration #{0}'.format(i))
+                    i += 1
 
 
     except:
@@ -172,6 +78,7 @@ def process_trees():
         print('time end: {0}'.format(datetime.datetime.now()))
 
 
+# Compile stats about a tree into one histogram json file
 def tree_stats_summary():
 
     try:
@@ -212,6 +119,7 @@ def tree_stats_summary():
         print('time end: {0}'.format(datetime.datetime.now()))
 
 
+# Compile stats about a chain into one histogram json file 
 def chain_stats():
     results = {'L': {}, 'R': {}}
     try:
