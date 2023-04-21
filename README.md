@@ -20,7 +20,7 @@ We also find that most chains are made up of at least 40% "visitors", or comment
 
 ![Chain structure](./figures/structure_chain.png)
 
-Next, we deevelop and define the "comment spread ratio" as a measure of how "spread out" one's comments are across different conversation chains.
+Finally, we develop and define the "comment spread ratio" as a measure of how "spread out" one's comments are across different conversation chains.
 A high ratio represents high spread of comments.
 A low ratio represents low spread, and therefore deep engagement.
 
