@@ -28,7 +28,7 @@ A low ratio represents low spread, and therefore deep engagement.
 ![Comment Spread Overview](./figures/comment_spread_overview.png)
 
 
-Here we find that commenters are more engaging on their own party's videos than on other parties.
+Here we find that commenters are more engaging on their own party's videos than on other parties (see "mean" column, which is the mean comment spread ratio).
 
 ![Comment Spread Results](./figures/comment_spread_results.png)
 
